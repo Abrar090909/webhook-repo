@@ -30,8 +30,13 @@ class Database:
         Creates database and collection if they don't exist.
         """
         try:
-            # Connect to MongoDB
-            self.client = MongoClient(Config.MONGODB_URI)
+            # Connect to MongoDB with timeout settings for Render deployment
+            self.client = MongoClient(
+                Config.MONGODB_URI,
+                serverSelectionTimeoutMS=10000,  # 10 second timeout
+                connectTimeoutMS=10000,  # 10 second connect timeout
+                socketTimeoutMS=10000    # 10 second socket timeout
+            )
             
             # Test the connection
             self.client.admin.command('ping')
