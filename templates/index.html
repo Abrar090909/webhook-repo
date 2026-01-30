@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="GitHub Webhook Event Monitor - Real-time dashboard for tracking GitHub actions">
+    <title>GitHub Webhook Monitor | TechStaX</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔔</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🔔</span>
+                    <h1>GitHub Webhook Monitor</h1>
+                </div>
+                <div class="header-status">
+                    <div class="status-badge" id="connectionStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Bar -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Events</div>
+                        <div class="stat-value" id="totalEvents">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Last Update</div>
+                        <div class="stat-value" id="lastUpdate">Never</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Next Poll</div>
+                        <div class="stat-value" id="nextPoll">15s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Section -->
+            <div class="events-section">
+                <div class="section-header">
+                    <h2>Recent Events</h2>
+                    <div class="section-actions">
+                        <button class="btn-refresh" id="refreshBtn" title="Refresh now">
+                            <span class="btn-icon">↻</span>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Events Container -->
+                <div class="events-container" id="eventsContainer">
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loadingState">
+                        <div class="spinner"></div>
+                        <p>Loading events...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-icon">📭</div>
+                        <h3>No events yet</h3>
+                        <p>Webhook events will appear here when GitHub Actions are triggered</p>
+                        <div class="empty-help">
+                            <p><strong>To test:</strong></p>
+                            <ol>
+                                <li>Push a commit to any branch in action-repo</li>
+                                <li>Create a pull request in action-repo</li>
+                                <li>Merge a pull request in action-repo</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Events List -->
+                    <div class="events-list" id="eventsList" style="display: none;">
+                        <!-- Events will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>TechStaX Developer Assessment | Built with Flask + MongoDB</p>
+            <p class="footer-links">
+                <a href="https://github.com/Abrar090909/action-repo" target="_blank" rel="noopener">
+                    <span>📦</span> action-repo
+                </a>
+                <span class="separator">•</span>
+                <a href="https://github.com/Abrar090909/webhook-repo" target="_blank" rel="noopener">
+                    <span>🔗</span> webhook-repo
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
