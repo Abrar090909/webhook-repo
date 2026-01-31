@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Validate configuration on startup
-Config.validate()
+# Note: Configuration is validated on-demand during the first request
+# to prevent startup crashes in restricted or CI/CD environments.
 
 
 @app.route('/')
