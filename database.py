@@ -32,15 +32,12 @@ class Database:
             return
 
         try:
-            # Connect to MongoDB with timeout settings for Render deployment
-            # Increased timeouts for more stability on free tier
-            # 'connect=False' prevents MongoClient from connecting immediately,
-            # delaying the connection until the first operation (lazy).
+            # Reduced timeouts to fit within Vercel's 10s limit
             self.client = MongoClient(
                 Config.MONGODB_URI,
-                serverSelectionTimeoutMS=20000,
-                connectTimeoutMS=20000,
-                socketTimeoutMS=20000,
+                serverSelectionTimeoutMS=8000,
+                connectTimeoutMS=8000,
+                socketTimeoutMS=8000,
                 connect=False
             )
             
