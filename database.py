@@ -31,16 +31,13 @@ class Database:
         """
         try:
             # Connect to MongoDB with timeout settings for Render deployment
+            # Increased timeouts for more stability on free tier
             self.client = MongoClient(
                 Config.MONGODB_URI,
-                serverSelectionTimeoutMS=10000,  # 10 second timeout
-                connectTimeoutMS=10000,  # 10 second connect timeout
-                socketTimeoutMS=10000    # 10 second socket timeout
+                serverSelectionTimeoutMS=20000,  # 20 second timeout
+                connectTimeoutMS=20000,
+                socketTimeoutMS=20000
             )
-            
-            # Test the connection
-            self.client.admin.command('ping')
-            logger.info("✓ Successfully connected to MongoDB Atlas")
             
             # Get database and collection
             self.db = self.client[Config.DATABASE_NAME]
@@ -50,10 +47,19 @@ class Database:
             self.collection.create_index("request_id", unique=True)
             logger.info(f"✓ Using database: {Config.DATABASE_NAME}")
             logger.info(f"✓ Using collection: {Config.COLLECTION_NAME}")
+
+            # Try to ping but don't block app startup if it fails
+            try:
+                self.client.admin.command('ping')
+                logger.info("✓ Successfully connected to MongoDB Atlas")
+            except Exception as e:
+                logger.warning(f"⚠ MongoDB ping failed (app still starting): {e}")
             
-        except ConnectionFailure as e:
-            logger.error(f"✗ Failed to connect to MongoDB: {e}")
-            raise
+        except Exception as e:
+            logger.error(f"✗ Database initialization error: {e}")
+            # We don't raise here to allow the app to start and show an error in the UI/Health check
+            # instead of hanging the entire process on Render.
+
     
     def insert_event(self, event_data):
         """
