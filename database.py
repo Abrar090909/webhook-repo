@@ -18,69 +18,60 @@ class Database:
     """MongoDB database handler for webhook events."""
     
     def __init__(self):
-        """Initialize MongoDB connection."""
+        """Initialize MongoDB connection (lazy)."""
         self.client = None
         self.db = None
         self.collection = None
-        self.connect()
+        # We don't call connect() here to avoid blocking module import
     
     def connect(self):
         """
         Establish connection to MongoDB Atlas.
-        Creates database and collection if they don't exist.
         """
+        if self.collection:
+            return
+
         try:
             # Connect to MongoDB with timeout settings for Render deployment
             # Increased timeouts for more stability on free tier
+            # 'connect=False' prevents MongoClient from connecting immediately,
+            # delaying the connection until the first operation (lazy).
             self.client = MongoClient(
                 Config.MONGODB_URI,
-                serverSelectionTimeoutMS=20000,  # 20 second timeout
+                serverSelectionTimeoutMS=20000,
                 connectTimeoutMS=20000,
-                socketTimeoutMS=20000
+                socketTimeoutMS=20000,
+                connect=False
             )
             
             # Get database and collection
             self.db = self.client[Config.DATABASE_NAME]
             self.collection = self.db[Config.COLLECTION_NAME]
             
-            # Create unique index on request_id to prevent duplicates
-            self.collection.create_index("request_id", unique=True)
-            logger.info(f"✓ Using database: {Config.DATABASE_NAME}")
-            logger.info(f"✓ Using collection: {Config.COLLECTION_NAME}")
-
-            # Try to ping but don't block app startup if it fails
+            # Try to initialize the collection (create index)
+            # This will happen on the first request if lazy
             try:
-                self.client.admin.command('ping')
-                logger.info("✓ Successfully connected to MongoDB Atlas")
+                self.collection.create_index("request_id", unique=True)
+                logger.info(f"✓ Connected to MongoDB and initialized index: {Config.COLLECTION_NAME}")
             except Exception as e:
-                logger.warning(f"⚠ MongoDB ping failed (app still starting): {e}")
+                logger.warning(f"⚠ Could not initialize MongoDB index (might still be connecting): {e}")
             
         except Exception as e:
-            logger.error(f"✗ Database initialization error: {e}")
-            # We don't raise here to allow the app to start and show an error in the UI/Health check
-            # instead of hanging the entire process on Render.
+            logger.error(f"✗ Database connection error: {e}")
 
     
     def insert_event(self, event_data):
         """
         Insert a webhook event into the database.
-        Prevents duplicate entries using request_id.
-        
-        Args:
-            event_data (dict): Event data containing:
-                - event_type: "push", "pull_request", or "merge"
-                - author: GitHub username
-                - action: Action performed (for PRs)
-                - from_branch: Source branch (for PRs/merges)
-                - to_branch: Target branch (for PRs/merges)
-                - branch: Branch name (for pushes)
-                - timestamp: ISO 8601 timestamp
-                - request_id: Unique identifier
-        
-        Returns:
-            bool: True if inserted successfully, False if duplicate
         """
         try:
+            # Ensure connected
+            if not self.collection:
+                self.connect()
+
+            if not self.collection:
+                raise ConnectionFailure("Could not connect to database")
+
             # Prepare document
             document = {
                 "event_type": event_data.get("event_type"),
@@ -109,15 +100,16 @@ class Database:
     def get_recent_events(self, limit=50, since=None):
         """
         Retrieve recent events from the database.
-        
-        Args:
-            limit (int): Maximum number of events to return
-            since (datetime): Only return events after this timestamp
-        
-        Returns:
-            list: List of event documents sorted by timestamp (newest first)
         """
         try:
+            # Ensure connected
+            if not self.collection:
+                self.connect()
+            
+            # If still not connected (e.g. error in connect), return empty
+            if not self.collection:
+                return []
+
             # Build query filter
             query_filter = {}
             if since:
@@ -143,7 +135,7 @@ class Database:
             
         except Exception as e:
             logger.error(f"✗ Error retrieving events: {e}")
-            raise
+            return []  # Return empty list on error to keep UI alive
     
     def get_all_events(self):
         """

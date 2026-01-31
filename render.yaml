@@ -3,7 +3,7 @@ services:
     name: webhook-receiver
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn --timeout 60 --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: MONGODB_URI
         sync: false
