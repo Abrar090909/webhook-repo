@@ -172,27 +172,35 @@ def clear_events():
 def health_check():
     """
     Health check endpoint for monitoring and deployment.
-    
-    Returns:
-        JSON: Application health status
     """
     try:
-        # Test database connection
-        db.client.admin.command('ping')
+        # Ensure we try to connect if not already
+        if not db.client:
+            db.connect()
+            
+        # Test database connection if client exists
+        if db.client:
+            db.client.admin.command('ping')
+            db_status = "connected"
+        else:
+            db_status = "initialization_failed"
         
         return jsonify({
             "status": "healthy",
-            "database": "connected",
+            "database": db_status,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }), 200
         
     except Exception as e:
-        logger.error(f"✗ Health check failed: {e}")
+        logger.warning(f"⚠ Health check database ping failed: {e}")
+        # Still return 200/healthy for the app itself if the DB is just slow
+        # This prevents Render from killing the app during DB cold starts
         return jsonify({
-            "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(e)
-        }), 503
+            "status": "healthy",
+            "database": "connecting_or_failed",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "App is running, database is slow/connecting"
+        }), 200
 
 
 # Error handlers
